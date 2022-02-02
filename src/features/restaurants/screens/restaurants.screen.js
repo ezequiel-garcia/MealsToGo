@@ -1,11 +1,18 @@
 /* eslint-disable prettier/prettier */
-import React from 'react';
-import styled from 'styled-components/native';
-import { FlatList } from 'react-native';
-import { Searchbar } from 'react-native-paper';
+import React, { useContext, useState } from 'react';
+import { Favourite } from '../../../components/favourites/favourite.component';
+import { FavouritesBar } from '../../../components/favourites/favourites-bar.component';
 
+import styled from 'styled-components/native';
+import { FlatList, TouchableOpacity } from 'react-native';
+import { Searchbar, ActivityIndicator, Colors } from 'react-native-paper';
+import { Search } from '../components/search.component';
 import { SafeArea } from '../../../components/utility/safe-area.component';
 import { RestaurantInfoCard } from '../components/resraurant-info-card.component';
+import { Spacer } from '../../../components/spacer/spacer.component';
+
+import { RestaurantsContext } from '../../../services/restaurants/restaurants.context';
+import { FavouritesContext } from '../../../services/favourites/favourites.context';
 
 const SearchContainer = styled.View`
   padding: ${(props) => props.theme.space[3]};
@@ -17,27 +24,56 @@ const RestaurantList = styled(FlatList).attrs({
   },
 })``;
 
-export const RestaurantsScreen = () => (
-  <SafeArea>
-    <SearchContainer>
-      <Searchbar placeholder='Search' />
-    </SearchContainer>
-    <RestaurantList
-      data={[
-        { name: 1 },
-        { name: 2 },
-        { name: 3 },
-        { name: 4 },
-        { name: 5 },
-        { name: 6 },
-        { name: 7 },
-        { name: 8 },
-        { name: 9 },
-        { name: 10 },
-      ]}
-      renderItem={() => <RestaurantInfoCard />}
-      keyExtractor={(item) => item.name}
-      contentContainerStyle={{ padding: 16 }}
-    />
-  </SafeArea>
-);
+const Loading = styled(ActivityIndicator)`
+  margin-left: -25px;
+`;
+
+const LoadingContainer = styled.View`
+  position: absolute;
+  top: 50%;
+  left: 50%;
+`;
+/* obtein the prop navigation from stack navigate */
+export const RestaurantsScreen = ({ navigation }) => {
+  const { isLoading, error, restaurants } = useContext(RestaurantsContext);
+  const { favourites } = useContext(FavouritesContext);
+  const [isToggled, setIsToggled] = useState(false);
+  return (
+    <SafeArea>
+      {isLoading && (
+        <LoadingContainer>
+          <Loading size={50} animating={true} color={Colors.blue300} />
+        </LoadingContainer>
+      )}
+      <Search
+        isFavouritesToggled={isToggled}
+        onFavouritesToggle={() => setIsToggled(!isToggled)}
+      />
+      {isToggled && (
+        <FavouritesBar
+          favourites={favourites}
+          onNavigate={navigation.navigate}
+        />
+      )}
+      <RestaurantList
+        data={restaurants}
+        renderItem={({ item }) => {
+          return (
+            <TouchableOpacity
+              onPress={() =>
+                navigation.navigate('RestaurantDetail', {
+                  restaurant: item,
+                })
+              }
+            >
+              <Spacer position='bottom' size='large'>
+                <RestaurantInfoCard restaurant={item} />
+              </Spacer>
+            </TouchableOpacity>
+          );
+        }}
+        keyExtractor={(item) => item.name}
+      />
+    </SafeArea>
+  );
+};
